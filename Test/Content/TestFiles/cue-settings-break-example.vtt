@@ -1,0 +1,20 @@
+WEBVTT
+
+NOTE This file is valid WebVTT and includes cue settings after end time.
+NOTE A parser that expects end-of-line right after the end timestamp will drop cues 1, 2, 3.
+
+1
+00:00:01.000 --> 00:00:03.000 align:start position:0%
+Cue with align+position settings.
+
+2
+00:00:04.000 --> 00:00:06.000 line:90% size:35%
+Cue with line+size settings.
+
+3
+00:00:07.000 --> 00:00:09.000 vertical:rl region:fred
+Cue with vertical+region settings.
+
+4
+00:00:10.000 --> 00:00:12.000
+Control cue without settings (this one should still parse).

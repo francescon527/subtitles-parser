@@ -1,0 +1,20 @@
+WEBVTT
+
+1
+00:00:01.000 --> 00:00:03.000
+Cue con ID numerico
+
+cue-A1
+00:00:04.000 --> 00:00:06.000
+Cue con ID alfanumerico trattino
+
+intro_scene_02
+00:00:07.000 --> 00:00:09.000
+Cue con ID alfanumerico underscore
+
+ABC123
+00:00:10.000 --> 00:00:12.000 align:start position:20%
+Cue con ID alfanumerico e settings
+
+00:00:13.000 --> 00:00:15.000
+Cue senza ID (deve continuare a funzionare)

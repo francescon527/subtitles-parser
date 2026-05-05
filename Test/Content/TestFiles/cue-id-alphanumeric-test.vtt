@@ -1,0 +1,32 @@
+WEBVTT
+
+NOTE Test file for alphanumeric cue identifiers.
+NOTE A parser that accepts only numeric IDs will likely resync/fail on several cues below.
+
+cue-001
+00:00:01.000 --> 00:00:03.000
+Alphanumeric ID with hyphen.
+
+chapter_A
+00:00:04.000 --> 00:00:06.000
+Alphanumeric ID with underscore.
+
+scene42_take7
+00:00:07.000 --> 00:00:09.000
+Mixed letters and digits.
+
+ID:SpeakerIntro
+00:00:10.000 --> 00:00:12.000 align:start position:10%
+ID with colon and cue settings.
+
+credit de transcription
+00:00:13.000 --> 00:00:15.000
+ID containing spaces.
+
+123
+00:00:16.000 --> 00:00:18.000
+Pure numeric ID (control case, should already work).
+
+ZZZ_final-99
+00:00:19.000 --> 00:00:21.000
+Another mixed ID control.

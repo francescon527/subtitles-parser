@@ -1,0 +1,166 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+
+namespace SubtitlesParser.Classes.Parsers;
+
+/// <summary>
+/// Parser for the .srt subtitles files
+///
+/// A .srt file looks like:
+/// 1
+/// 00:00:10,500 --> 00:00:13,000
+/// Elephant's Dream
+///
+/// 2
+/// 00:00:15,000 --> 00:00:18,000
+/// At the left we can see...[12]
+/// </summary>
+public sealed class SrtParser : ITextFormatSubtitlesParser
+{
+    private readonly string[] _delimiters = ["-->", "- >", "->"];
+
+    public SrtParser() { }
+
+    public List<SubtitleItem> ParseStream(TextReader srtStream)
+    {
+        var items = new List<SubtitleItem>();
+        var srtSubParts = GetSrtSubTitleParts(srtStream).ToList();
+        if (srtSubParts.Any())
+        {
+            foreach (var srtSubPart in srtSubParts)
+            {
+                var lines =
+                    srtSubPart.Split([Environment.NewLine], StringSplitOptions.None)
+                        .Select(s => s.Trim())
+                        .Where(l => !string.IsNullOrEmpty(l))
+                        .ToList();
+
+                var item = new SubtitleItem();
+                var tempLines = new List<string>();
+                var tempPlainLines = new List<string>();
+                foreach (var line in lines)
+                {
+                    if (item.StartTime == TimeSpan.Zero && item.EndTime == TimeSpan.Zero)
+                    {
+                        // we look for the timecodes first
+                        var success = TryParseTimecodeLine(line, out var startTc, out var endTc);
+                        if (success)
+                        {
+                            item.StartTime = startTc;
+                            item.EndTime = endTc;
+                        }
+                    }
+                    else
+                    {
+                        // we found the timecode, now we get the text
+                        tempLines.Add(line);
+                        // strip formatting by removing anything within curly braces or angle brackets, which is how SRT styles text according to wikipedia (https://en.wikipedia.org/wiki/SubRip#Formatting)
+                        tempPlainLines.Add(Regex.Replace(line, @"\{.*?\}|<.*?>", string.Empty));
+                    }
+                }
+
+                if ((item.StartTime != TimeSpan.MaxValue || item.EndTime != TimeSpan.MaxValue) && item.Lines.Any())
+                {
+                    // parsing succeeded
+                    item.Lines = [.. lines];
+                    item.PlaintextLines = [.. tempPlainLines];
+                    items.Add(item);
+                }
+            }
+
+            if (items.Any())
+            {
+                return items;
+            }
+            else
+            {
+                throw new ArgumentException("Stream is not in a valid Srt format");
+            }
+        }
+        else
+        {
+            throw new FormatException("Parsing as srt returned no srt part.");
+        }
+    }
+
+    /// <summary>
+    /// Enumerates the subtitle parts in a srt file based on the standard line break observed between them.
+    /// A srt subtitle part is in the form:
+    ///
+    /// 1
+    /// 00:00:20,000 --> 00:00:24,400
+    /// Altocumulus clouds occur between six thousand
+    ///
+    /// </summary>
+    /// <param name="reader">The textreader associated with the srt file</param>
+    /// <returns>An IEnumerable(string) object containing all the subtitle parts</returns>
+    private IEnumerable<string> GetSrtSubTitleParts(TextReader reader)
+    {
+        string line;
+        var sb = new StringBuilder();
+
+        while ((line = reader.ReadLine()) != null)
+        {
+            if (string.IsNullOrEmpty(line.Trim()))
+            {
+                // return only if not empty
+                var res = sb.ToString().TrimEnd();
+                if (!string.IsNullOrEmpty(res))
+                {
+                    yield return res;
+                }
+                sb = new StringBuilder();
+            }
+            else
+            {
+                sb.AppendLine(line);
+            }
+        }
+
+        if (sb.Length > 0)
+        {
+            yield return sb.ToString();
+        }
+    }
+
+    private bool TryParseTimecodeLine(string line, out TimeSpan startTc, out TimeSpan endTc)
+    {
+        var parts = line.Split(_delimiters, StringSplitOptions.None);
+        if (parts.Length != 2)
+        {
+            // this is not a timecode line
+            startTc = TimeSpan.MaxValue;
+            endTc = TimeSpan.MaxValue;
+            return false;
+        }
+        else
+        {
+            startTc = ParseSrtTimecode(parts[0]);
+            endTc = ParseSrtTimecode(parts[1]);
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Takes an SRT timecode as a string and parses it into a double (in seconds). A SRT timecode reads as follows:
+    /// 00:00:20,000
+    /// </summary>
+    /// <param name="s">The timecode to parse</param>
+    /// <returns>The parsed timecode as a TimeSpan instance. If the parsing was unsuccessful, -1 is returned (subtitles should never show)</returns>
+    private static TimeSpan ParseSrtTimecode(string s)
+    {
+        var match = Regex.Match(s, "[0-9]+:[0-9]+:[0-9]+([,\\.][0-9]+)?");
+        if (match.Success)
+        {
+            if (TimeSpan.TryParse(match.Value.Replace(',', '.'), out TimeSpan result))
+            {
+                return result;
+            }
+        }
+        return TimeSpan.MaxValue;
+    }
+}
