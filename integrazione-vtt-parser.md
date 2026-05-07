@@ -78,3 +78,43 @@ L’ID era riconosciuto solo con check numerico, quindi cue con ID non numerico 
 \- Migliore compatibilità con generatori che usano ID descrittivi.
 
 \- Riduzione dei casi in cui cue valide non vengono acquisite.
+
+\---
+
+## 4) Gestire header WEBVTT con testo aggiuntivo
+
+Il riconoscimento dell'header iniziale è stato reso più flessibile: non solo `WEBVTT` esatto, ma anche varianti valide con testo aggiuntivo nella stessa riga (es. `WEBVTT - Demo`, `WEBVTT Kind: captions`).
+
+### Problema originale
+
+La validazione dell'header accettava solo il confronto esatto con `WEBVTT`, causando il mancato riconoscimento di file formalmente validi ma con intestazione estesa.
+
+### Intervento
+
+La condizione di riconoscimento dell'header è stata aggiornata in modo da accettare righe che iniziano con `WEBVTT`.
+
+### Impatto
+
+\- Maggiore compatibilità con file VTT generati da strumenti diversi.
+
+\- Riduzione degli scarti in fase iniziale di parsing.
+
+\---
+
+## 5) Gestire blocchi NOTE senza includerli nelle frasi
+
+È stata introdotta la gestione dei blocchi `NOTE` del formato WebVTT, che devono essere trattati come commenti/metadati e non come sottotitoli.
+
+### Problema originale
+
+Le righe `NOTE` potevano interferire con il flusso del parser o essere considerate parte del contenuto delle cue.
+
+### Intervento
+
+È stato aggiunto un discriminatore dedicato (`Note`) e una logica di skip del relativo blocco (anche multilinea), fino al separatore previsto.
+
+### Impatto
+
+\- Le note non finiscono più nella lista delle frasi restituite.
+
+\- Migliora la correttezza del parsing su file VTT reali che includono commenti.

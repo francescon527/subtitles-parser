@@ -1,8 +1,5 @@
 WEBVTT
 
-NOTE Test file for alphanumeric cue identifiers.
-NOTE A parser that accepts only numeric IDs will likely resync/fail on several cues below.
-
 cue-001
 00:00:01.000 --> 00:00:03.000
 Alphanumeric ID with hyphen.

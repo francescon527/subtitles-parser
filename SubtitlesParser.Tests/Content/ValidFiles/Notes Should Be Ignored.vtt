@@ -1,0 +1,18 @@
+WEBVTT - Note handling test
+
+NOTE questa nota non deve diventare sottotitolo
+
+1
+00:00:01.000 --> 00:00:03.000
+Prima frase valida
+
+NOTE
+Questa e' una nota multilinea
+con piu' righe
+da ignorare completamente
+
+cue-2
+00:00:04.000 --> 00:00:06.000
+Seconda frase valida
+
+NOTE fine file

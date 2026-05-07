@@ -1,0 +1,15 @@
+WEBVTT - Test gestione NOTE
+
+NOTE questa nota deve essere ignorata dal parser
+
+intro-1
+00:00:01.000 --> 00:00:03.200
+Ciao, questa e' la prima frase.
+
+NOTE
+Blocco nota multilinea
+da non includere nell'output
+
+intro-2
+00:00:04.000 --> 00:00:06.800
+Questa e' la seconda frase valida.

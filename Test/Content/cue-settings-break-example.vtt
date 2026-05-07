@@ -1,8 +1,5 @@
 WEBVTT
 
-NOTE This file is valid WebVTT and includes cue settings after end time.
-NOTE A parser that expects end-of-line right after the end timestamp will drop cues 1, 2, 3.
-
 1
 00:00:01.000 --> 00:00:03.000 align:start position:0%
 Cue with align+position settings.

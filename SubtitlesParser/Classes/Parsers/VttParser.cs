@@ -123,6 +123,7 @@ public sealed partial class VttParser : ITextFormatSubtitlesParser
 
             case { } when !string.IsNullOrWhiteSpace(textLineNoCrLf)
              && !string.Equals(textLineNoCrLf, "WEBVTT", StringComparison.Ordinal)
+             && !textLineNoCrLf.StartsWith("NOTE", StringComparison.Ordinal)
              && !GetNonStandardWebvttTimecodeRegex().IsMatch(textLineNoCrLf)
              && !textLineNoCrLf.Contains("-->", StringComparison.Ordinal)
              && textLineNoCrLf.IndexOfAny(new[] { ' ', '\t' }) < 0:
@@ -132,8 +133,14 @@ public sealed partial class VttParser : ITextFormatSubtitlesParser
                 var parsedTimecode = ParseVttTimecode(timestampMatch);
                 return (WebvttItemDiscriminator.Timestamp, parsedTimecode);
 
+            case { } when textLineNoCrLf.StartsWith("NOTE", StringComparison.Ordinal):
+                while (reader.ReadLine() is string noteLine && false == string.IsNullOrEmpty(noteLine))
+                {
+                }
+                return (WebvttItemDiscriminator.Note, null);
+
             default:
-                if (textLineNoCrLf == "WEBVTT")
+                if (textLineNoCrLf.StartsWith("WEBVTT", StringComparison.Ordinal))
                     return (WebvttItemDiscriminator.WebvttHeader, null);
 
                 var subs = new List<string>(capacity: 1) { textLineNoCrLf };
@@ -156,6 +163,7 @@ public sealed partial class VttParser : ITextFormatSubtitlesParser
 
             case { } when !string.IsNullOrWhiteSpace(textLineNoCrLf)
              && !string.Equals(textLineNoCrLf, "WEBVTT", StringComparison.Ordinal)
+             && !textLineNoCrLf.StartsWith("NOTE", StringComparison.Ordinal)
              && !GetNonStandardWebvttTimecodeRegex().IsMatch(textLineNoCrLf)
              && !textLineNoCrLf.Contains("-->", StringComparison.Ordinal)
              && textLineNoCrLf.IndexOfAny(new[] { ' ', '\t' }) < 0:
@@ -165,8 +173,14 @@ public sealed partial class VttParser : ITextFormatSubtitlesParser
                 var parsedTimecode = ParseVttTimecode(timestampMatch);
                 return (WebvttItemDiscriminator.Timestamp, parsedTimecode);
 
+            case { } when textLineNoCrLf.StartsWith("NOTE", StringComparison.Ordinal):
+                while (await reader.ReadLineAsync(cancellation) is string noteLine && false == string.IsNullOrEmpty(noteLine))
+                {
+                }
+                return (WebvttItemDiscriminator.Note, null);
+
             default:
-                if (textLineNoCrLf == "WEBVTT")
+                if (textLineNoCrLf.StartsWith("WEBVTT", StringComparison.Ordinal))
                     return (WebvttItemDiscriminator.WebvttHeader, null);
 
                 var subs = new List<string>(capacity: 1) { textLineNoCrLf };
@@ -228,6 +242,8 @@ private static (bool Resync, SubtitleItem? VttBlock) ParseVttBlock(TextReader vt
     var vttElement = GetNextWebvttElement(vttStream);
     if (vttElement.Discriminator == WebvttItemDiscriminator.Terminated)
         return (Resync: false, VttBlock: null);
+    if (vttElement.Discriminator == WebvttItemDiscriminator.Note)
+        return ParseVttBlock(vttStream);
     // ID opzionale (ora può essere anche alfanumerico)
     if (vttElement.Discriminator == WebvttItemDiscriminator.Id)
         vttElement = GetNextWebvttElement(vttStream);
@@ -274,6 +290,8 @@ private static async ValueTask<(bool Resync, SubtitleItem? VttBlock)> ParseVttBl
     var vttElement = await GetNextWebvttElementAsync(vttStream, cancellation);
     if (vttElement.Discriminator == WebvttItemDiscriminator.Terminated)
         return (Resync: false, VttBlock: null);
+    if (vttElement.Discriminator == WebvttItemDiscriminator.Note)
+        return await ParseVttBlockAsync(vttStream, cancellation);
     // ID opzionale (ora può essere anche alfanumerico)
     if (vttElement.Discriminator == WebvttItemDiscriminator.Id)
         vttElement = await GetNextWebvttElementAsync(vttStream, cancellation);
@@ -377,6 +395,7 @@ private static async ValueTask<(bool Resync, SubtitleItem? VttBlock)> ParseVttBl
         Terminated,
         Text,
         Timestamp,
-        WebvttHeader
+        WebvttHeader,
+        Note
     }
 }
