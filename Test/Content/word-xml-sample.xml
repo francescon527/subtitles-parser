@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<w:document xmlns:w="http://schemas.microsoft.com/office/word/2003/wordml">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:rPr><w:vanish/></w:rPr>
+        <w:t>[00:00:01.000 - 00:00:03.000] </w:t>
+      </w:r>
+      <w:r>
+        <w:t>Primo sottotitolo</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:r>
+        <w:rPr><w:vanish/></w:rPr>
+        <w:t>[00:00:04.000 - 00:00:06.000] </w:t>
+      </w:r>
+      <w:r>
+        <w:t>Secondo sottotitolo</w:t>
+      </w:r>
+    </w:p>
+  </w:body>
+</w:document>

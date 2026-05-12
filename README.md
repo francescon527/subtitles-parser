@@ -6,7 +6,7 @@ For more info on subtitles formats, see this page: http://en.wikipedia.org/wiki/
 It's available on Nuget:
 > Install-Package SubtitlesParser
 
-For now, 7 different formats are supported for parsing:
+For now, 8 different formats are supported for parsing:
 * MicroDvd	https://github.com/AlexPoint/SubtitlesParser/blob/master/SubtitlesParser/Classes/Parsers/MicroDvdParser.cs
 * SubRip	https://github.com/AlexPoint/SubtitlesParser/blob/master/SubtitlesParser/Classes/Parsers/SrtParser.cs
 * SubStationAlpha	https://github.com/AlexPoint/SubtitlesParser/blob/master/SubtitlesParser/Classes/Parsers/SsaParser.cs
@@ -14,6 +14,7 @@ For now, 7 different formats are supported for parsing:
 * TTML	https://github.com/AlexPoint/SubtitlesParser/blob/master/SubtitlesParser/Classes/Parsers/TtmlParser.cs
 * WebVTT	https://github.com/AlexPoint/SubtitlesParser/blob/master/SubtitlesParser/Classes/Parsers/VttParser.cs
 * Youtube specific XML format	https://github.com/AlexPoint/SubtitlesParser/blob/master/SubtitlesParser/Classes/Parsers/YtXmlFormatParser.cs
+* WordprocessingML 2003 XML format	SubtitlesParser/Classes/Parsers/WordXmlFormatSubtitlesParser.cs
 
 And 2 formats are supported for writing: 
 * SubRip    https://github.com/AlexPoint/SubtitlesParser/blob/master/SubtitlesParser/Classes/Writers/SrtWriter.cs

@@ -13,62 +13,45 @@ class Program
         var parser = new SubtitlesParser.Classes.Parsers.SubParser();
 
         var allFiles = BrowseTestSubtitlesFiles();
-        foreach (var file in allFiles)
-        {
-            var fileName = Path.GetFileName(file);
-            using (var fileStream = File.OpenRead(file))
-            {
-                try
-                {
-                    var mostLikelyFormat = parser.GetMostLikelyFormat(fileName);
-                    var items = parser.ParseStream(fileStream, Encoding.UTF8, mostLikelyFormat);
-        //             if (items.Any())
-        //             {
-        //                 Console.WriteLine("Parsing of file {0}: SUCCESS ({1} items - {2}% corrupted)",
-        //                     fileName, items.Count, items.Count(it => it.StartTime == TimeSpan.MaxValue || it.EndTime == TimeSpan.MaxValue) * 100 / items.Count);
-        //                 /*foreach (var item in items)
-        //                 {
-        //                     Console.WriteLine(item);
-        //                 }*/
-        //                 /*var duplicates =
-        //                     items.GroupBy(it => new {it.StartTime, it.EndTime}).Where(grp => grp.Count() > 1);
-        //                 Console.WriteLine("{0} duplicate items", duplicates.Count());*/
-        //                 Console.WriteLine("----------------");
-        //             }
-        //             else
-        //             {
-        //                 Console.WriteLine("Parsing of file {0}: SUCCESS (No items found!)", fileName, items.Count);
-        //             }
-        //         }
-        //         catch (Exception ex)
-        //         {
-        //             Console.WriteLine("Parsing of file {0}: FAILURE\n{1}", fileName, ex);
-        //         }
-        //     }
-        //     Console.WriteLine("----------------------");
+        // Old per-file flow kept for traceability:
+        // foreach (var file in allFiles)
+        // {
+        //     using var fileStream = File.OpenRead(file);
+        //     var mostLikelyFormat = parser.GetMostLikelyFormat(Path.GetFileName(file));
+        //     var items = parser.ParseStream(fileStream, Encoding.UTF8, mostLikelyFormat);
         // }
-        if (items.Any())
-{
-        Console.WriteLine("Parsing of file {0}: SUCCESS ({1} items - {2}% corrupted)",
-            fileName, items.Count, items.Count(it => it.StartTime == TimeSpan.MaxValue || it.EndTime == TimeSpan.MaxValue) * 100 / items.Count);
-        foreach (var item in items)
+        var allItems = parser.ParseFiles(allFiles, Encoding.UTF8);
+        Console.WriteLine("Total parsed subtitle items from {0} files: {1}", allFiles.Length, allItems.Count);
+
+        var outputTextPath = Path.Combine(Directory.GetCurrentDirectory(), "parsed-subtitles-text.txt");
+        using var outputWriter = new StreamWriter(outputTextPath, false, Encoding.UTF8);
+
+        foreach (var item in allItems)
         {
-            Console.WriteLine($"{item.StartTime:hh\\:mm\\:ss\\.fff} --> {item.EndTime:hh\\:mm\\:ss\\.fff}");
-            if (item.Lines is { Length: > 0 })
+            try
             {
-                foreach (var line in item.Lines)
-                    Console.WriteLine(line);
-            }
-            Console.WriteLine("----------------");
-        }
-    }
-        Console.ReadLine();
-            } catch (Exception ex)
+                Console.WriteLine($"{item.StartTime:hh\\:mm\\:ss\\.fff} --> {item.EndTime:hh\\:mm\\:ss\\.fff}");
+                if (item.Lines is { Length: > 0 })
                 {
-                  Console.WriteLine("Parsing of file {0}: FAILURE\n{1}", fileName, ex);
+                    foreach (var line in item.Lines)
+                    {
+                        Console.WriteLine(line);
+                        outputWriter.WriteLine(line);
+                    }
                 }
+
+                Console.WriteLine("----------------");
+                outputWriter.WriteLine();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failure while printing subtitle item: {0}", ex);
             }
         }
+
+        Console.WriteLine("Saved subtitle text to: {0}", outputTextPath);
+
+        Console.ReadLine();
     }
 
     private static string[] BrowseTestSubtitlesFiles()

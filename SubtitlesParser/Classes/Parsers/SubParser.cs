@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml;
 
 namespace SubtitlesParser.Classes.Parsers;
 
@@ -19,7 +20,13 @@ public sealed class SubParser
         {SubtitlesFormat.SubStationAlphaFormat, new SsaParser()},
         // UNDONE {SubtitlesFormat.TtmlFormat, new TtmlParser()},
         {SubtitlesFormat.WebVttFormat, new VttParser()},
-        // UNDONE {SubtitlesFormat.YoutubeXmlFormat, new YtXmlFormatParser()}
+        // UNDONE {SubtitlesFormat.YoutubeXmlFormat, new YtXmlFormatParser()},
+        // UNDONE {SubtitlesFormat.WordXmlFormat, new WordXmlFormatSubtitlesParser()}
+    };
+    private readonly Dictionary<SubtitlesFormat, IXmlFormatSubtitlesParser> _xmlSubFormatToParser = new()
+    {
+        // UNDONE {SubtitlesFormat.YoutubeXmlFormat, new YtXmlFormatParser()},
+        {SubtitlesFormat.WordXmlFormat, new WordXmlFormatSubtitlesParser()}
     };
 
 
@@ -66,6 +73,48 @@ public sealed class SubParser
     }
 
     /// <summary>
+    /// Parses multiple subtitle files and returns a single merged list of SubtitleItems.
+    /// </summary>
+    /// <param name="filePaths">The subtitle file paths</param>
+    /// <param name="encoding">The stream encoding (defaults to UTF-8)</param>
+    /// <returns>A merged list of SubtitleItems from all files</returns>
+    public List<SubtitleItem> ParseFiles(IEnumerable<string> filePaths, Encoding encoding = null)
+    {
+        if (filePaths == null)
+        {
+            throw new ArgumentNullException(nameof(filePaths));
+        }
+
+        var allItems = new List<SubtitleItem>();
+        encoding ??= Encoding.UTF8;
+
+        foreach (var filePath in filePaths.Where(path => !string.IsNullOrWhiteSpace(path)))
+        {
+            // Old single-file usage (kept for traceability):
+            // using (var fileStream = File.OpenRead(pathToSubtitleFile))
+            // {
+            //     var items = ParseStream(fileStream, encoding);
+            // }
+
+            try
+            {
+                using var fileStream = File.OpenRead(filePath);
+                var mostLikelyFormat = GetMostLikelyFormat(filePath);
+                var items = ParseStream(fileStream, encoding, mostLikelyFormat);
+                allItems.AddRange(items);
+            }
+            catch (Exception ex)
+            {
+                // Old behavior (kept commented): fail-fast on first invalid file.
+                // throw;
+                Console.WriteLine("Skipping file '{0}' due to parsing error: {1}", filePath, ex.Message);
+            }
+        }
+
+        return allItems;
+    }
+
+    /// <summary>
     /// Parses a subtitle file stream.
     /// We try all the parsers registered in the _subFormatToParser dictionary
     /// </summary>
@@ -75,14 +124,20 @@ public sealed class SubParser
     /// <returns>The corresponding list of SubtitleItem, null if parsing failed</returns>
     public List<SubtitleItem> ParseStream(Stream stream, Encoding encoding, SubtitlesFormat subFormat = null)
     {
-        var dictionary = subFormat != null ?
+        var textDictionary = subFormat != null ?
             _subFormatToParser
             // start the parsing by the specified format
             .OrderBy(dic => Math.Abs(string.Compare(dic.Key.Name, subFormat.Name, StringComparison.Ordinal)))
             .ToDictionary(entry => entry.Key, entry => entry.Value) :
             _subFormatToParser;
 
-        return ParseStream(stream, encoding, dictionary);
+        var xmlDictionary = subFormat != null ?
+            _xmlSubFormatToParser
+            .OrderBy(dic => Math.Abs(string.Compare(dic.Key.Name, subFormat.Name, StringComparison.Ordinal)))
+            .ToDictionary(entry => entry.Key, entry => entry.Value) :
+            _xmlSubFormatToParser;
+
+        return ParseStream(stream, encoding, textDictionary, xmlDictionary);
     }
 
     /// <summary>
@@ -94,6 +149,11 @@ public sealed class SubParser
     /// <param name="subFormatDictionary">The dictionary of the subtitles parser (ordered) to try</param>
     /// <returns>The corresponding list of SubtitleItem, null if parsing failed</returns>
     public List<SubtitleItem> ParseStream(Stream stream, Encoding encoding, Dictionary<SubtitlesFormat, ITextFormatSubtitlesParser> subFormatDictionary)
+    {
+        return ParseStream(stream, encoding, subFormatDictionary, _xmlSubFormatToParser);
+    }
+
+    private List<SubtitleItem> ParseStream(Stream stream, Encoding encoding, Dictionary<SubtitlesFormat, ITextFormatSubtitlesParser> subFormatDictionary, Dictionary<SubtitlesFormat, IXmlFormatSubtitlesParser> xmlSubFormatDictionary)
     {
         // test if stream if readable
         if (!stream.CanRead)
@@ -108,15 +168,43 @@ public sealed class SubParser
             seekableStream = StreamHelpers.CopyStream(stream);
             seekableStream.Seek(0, SeekOrigin.Begin);
         }
-        var reader = new StreamReader(seekableStream, encoding);
-
         // if dictionary is null, use the default one
         subFormatDictionary ??= _subFormatToParser;
+        xmlSubFormatDictionary ??= _xmlSubFormatToParser;
+
+        // XML parser pass (content-based detection)
+        foreach (var xmlSubtitlesParser in xmlSubFormatDictionary)
+        {
+            try
+            {
+                if (seekableStream.CanSeek)
+                {
+                    seekableStream.Position = 0;
+                }
+
+                var parser = xmlSubtitlesParser.Value;
+                return parser.ParseStream(seekableStream, encoding);
+            }
+            catch (XmlException)
+            {
+                // Not XML or malformed XML for this parser; try next parser family.
+            }
+            catch (ArgumentException)
+            {
+                // XML parsed but does not match this specific XML subtitle format.
+            }
+        }
 
         foreach (var subtitlesParser in subFormatDictionary)
         {
             try
             {
+                if (seekableStream.CanSeek)
+                {
+                    seekableStream.Position = 0;
+                }
+
+                var reader = new StreamReader(seekableStream, encoding, true, 1024, true);
                 var parser = subtitlesParser.Value;
                 var items = parser.ParseStream(reader);
                 return items;

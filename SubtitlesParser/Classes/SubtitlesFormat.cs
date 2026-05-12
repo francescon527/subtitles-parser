@@ -51,6 +51,11 @@ public sealed class SubtitlesFormat
         Name = "YoutubeXml",
         //Extension = @"\.*"
     };
+    public static SubtitlesFormat WordXmlFormat = new SubtitlesFormat()
+    {
+        Name = "WordXml",
+        Extension = @"\.xml"
+    };
 
     public static List<SubtitlesFormat> SupportedSubtitlesFormats =
     [
@@ -60,6 +65,7 @@ public sealed class SubtitlesFormat
         SubStationAlphaFormat,
         TtmlFormat,
         WebVttFormat,
-        YoutubeXmlFormat
+        YoutubeXmlFormat,
+        WordXmlFormat
     ];
 }
